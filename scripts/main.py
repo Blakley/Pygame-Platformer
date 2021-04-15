@@ -1,29 +1,49 @@
+# script imports
+import settings
+
+# library imports
 import pygame
 from pygame.locals import *
 
 #
-def initialize_screen():	
-	pygame.init()
+class Player():
+	def __init__(self, x, y):
+		print("")
 
-	screen_width = 1000;
-	screen_height = 1000;
+	def collision(self):
+		print("")
 
-	screen = pygame.display.set_mode((screen_width, screen_height))
-	pygame.display.set_caption('Mazer')
+	def draw(self):
+		print("")
 
-	run_game()
+#
+class World():
+	def __init__(self, data):
+		self.tiles = []
 
+	# draws the world data from the tiles we created
+	def draw(self):
+		for tile in self.tiles:
+			screen.blit(tile[0], tile[1]) # draw the (img, img_rect)
 
-def run_game():
-	run = True 
-	while(run):
-		for event in pygame.event.get(): # loop through the events 
-			if event.type == pygame.QUIT: # if the event is quit, exit game
-				run = False
-	pygame.display.update() # update our screen
+#
+class Game():
+	def __init__(self):
+		pygame.init()
+		self.screen = pygame.display.set_mode((settings.w, settings.h))
+		pygame.display.set_caption('Mazer')
+		self.start()
 
+	def start(self):
+		run = True 
+		while(run):
+			for event in pygame.event.get(): 
+				if event.type == pygame.QUIT:
+					run = False
+		pygame.display.update() 
 
+# 
+game = Game()
 pygame.quit()
 
-if __name__ == '__main__':
-	initialize_screen()
+
