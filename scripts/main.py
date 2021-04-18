@@ -7,7 +7,10 @@ from pygame.locals import *
 
 
 # global variables
+game_over = 0
 enemies = []
+geo = []
+
 
 class Player():
 	def __init__(self, x, y, screen, world):
@@ -22,7 +25,8 @@ class Player():
 		
 		self.load_assets()
 		self.image = self.images_right[self.img_index] # first animation
-		
+		self.dead = pygame.image.load('../assets/Player/dead.png')
+
 		self.rect = self.image.get_rect()
 		self.rect.x = x
 		self.rect.y = y
@@ -89,6 +93,7 @@ class Player():
 
 	# handle player collision
 	def collision(self, dx, dy):
+		global game_over
 		values = []
 
 		for tile in self.world.tiles:
@@ -106,10 +111,17 @@ class Player():
 				elif self.vel_y >= 0:
 					dy = tile[1].top - self.rect.bottom
 
+		# check for collision with enemies
+		if pygame.sprite.spritecollide(self, enemies[0], False):
+			game_over = -1
+
+		# check for collision with lava
+		if pygame.sprite.spritecollide(self, geo[0], False):
+			game_over = -1
+
 		values.append(dx)
 		values.append(dy)
 		return values
-
 
 	# handle sprite animation
 	def animation(self, cool_down):
@@ -132,39 +144,46 @@ class Player():
 
 	# Update the player
 	def draw_player(self):
+		global game_over
+
 		dx = 0
 		dy = 0
 		walk_cool_down = 5
 
-		# input handler
-		key = self.controller(dx, dy) 
-		dx = key[0]
-		dy = key[1]
-		
-		# animation handler
-		self.animation(walk_cool_down)
+		if game_over == 0:
 
-		# add gravity
-		self.vel_y += 1
-		if self.vel_y > 10:
-			self.vel_y = 10
-		dy += self.vel_y
+			# input handler
+			key = self.controller(dx, dy) 
+			dx = key[0]
+			dy = key[1]
+			
+			# animation handler
+			self.animation(walk_cool_down)
 
-		# check for collision
-		col = self.collision(dx, dy)
-		dx = col[0]
-		dy = col[1]
+			# add gravity
+			self.vel_y += 1
+			if self.vel_y > 10:
+				self.vel_y = 10
+			dy += self.vel_y
 
-		# update player coordinates
-		self.rect.x += dx
-		self.rect.y += dy
+			# check for collision
+			col = self.collision(dx, dy)
+			dx = col[0]
+			dy = col[1]
 
-		if self.rect.bottom > settings.h:
-			self.rect.bottom = settings.h
-			dy = 0
+			# update player coordinates
+			self.rect.x += dx
+			self.rect.y += dy
+
+		# change to dead player image
+		elif game_over == -1:
+			self.image = self.dead
+			if self.rect.y > 200:
+				self.rect.y -= 5
 
 		self.screen.blit(self.image, self.rect)
 		self.draw_outline()
+
 
 class Enemy(pygame.sprite.Sprite):
 	def __init__(self, x, y, screen):
@@ -185,9 +204,22 @@ class Enemy(pygame.sprite.Sprite):
 		self.move_counter += 1
 
 		# if moved x amount, change enemy direction
-		if abs(self.move_counter) > 150:
+		if abs(self.move_counter) > 50:
 			self.move_direction *= -1
 			self.move_counter *= -1
+
+
+class Lava(pygame.sprite.Sprite):
+	def __init__(self, x, y, screen):
+		self.screen = screen
+		pygame.sprite.Sprite.__init__(self)
+		img = pygame.image.load('../assets/Tiles/lava.png')
+		self.image = pygame.transform.scale(img, (settings.tile_size, settings.tile_size // 2))
+
+
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
 
 
 class World():
@@ -228,9 +260,12 @@ class World():
 					img_rect.y = row * settings.tile_size
 					tile = (img, img_rect)
 					self.tiles.append(tile)
-				if (tile == 3):
+				if (tile == 3): # blob enemy
 					blob = Enemy(col * settings.tile_size, row * settings.tile_size + 15, self.screen) # (x, y, screen)
 					enemies[0].add(blob)
+				if (tile == 4): # lava
+					lava = Lava(col * settings.tile_size, row * settings.tile_size + (settings.tile_size // 2), self.screen)
+					geo[0].add(lava)
 
 				col += 1
 			row += 1
@@ -270,9 +305,15 @@ class Game():
 
 	# start game
 	def start(self):
+		global game_over
 		global enemies
+		global geo
+
 		enemy_blobs = pygame.sprite.Group()
+		lava_group = pygame.sprite.Group()
+
 		enemies.append(enemy_blobs)
+		geo.append(lava_group)
 
 		world = World(self.screen)
 		player = Player(100, settings.h - 130, self.screen, world)
@@ -282,12 +323,14 @@ class Game():
 			self.clock.tick(self.fps) 
 
 			world.draw_world()
-			# world.draw_grid()
 			world.draw_tiles()
 			player.draw_player()
 			
-			enemies[0].update()
+			if game_over == 0:
+				enemies[0].update()
+			
 			enemies[0].draw(self.screen) # draw the blob group
+			geo[0].draw(self.screen)
 
 			for event in pygame.event.get(): 
 				if event.type == pygame.QUIT:
