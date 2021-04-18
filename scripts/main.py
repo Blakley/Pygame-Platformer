@@ -6,6 +6,9 @@ import pygame
 from pygame.locals import *
 
 
+# global variables
+enemies = []
+
 class Player():
 	def __init__(self, x, y, screen, world):
 		self.screen = screen
@@ -91,7 +94,7 @@ class Player():
 		for tile in self.world.tiles:
 			# check for collision in x direction ...
 			if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.rect.w, self.rect.h):
-				dx = 0
+				dx = 0 # if we collide, stop player
 
 			# check collision in y direction of expected dy (change in y)
 			if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.rect.w, self.rect.h):
@@ -163,6 +166,29 @@ class Player():
 		self.screen.blit(self.image, self.rect)
 		self.draw_outline()
 
+class Enemy(pygame.sprite.Sprite):
+	def __init__(self, x, y, screen):
+		self.screen = screen
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load('../assets/Enemies/blob.png')
+		
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+
+		self.move_direction = 1 # direction & speed
+		self.move_counter = 0 # enemy pixel movement count
+
+	# change the position of the enemy
+	def update(self):
+		self.rect.x += self.move_direction
+		self.move_counter += 1
+
+		# if moved x amount, change enemy direction
+		if abs(self.move_counter) > 150:
+			self.move_direction *= -1
+			self.move_counter *= -1
+
 
 class World():
 	def __init__(self, screen):
@@ -182,6 +208,8 @@ class World():
 
 	# setup images and tile data
 	def setup_data(self):
+		global enemies
+
 		row = 0
 		for r in settings.data:
 			col = 0
@@ -200,6 +228,10 @@ class World():
 					img_rect.y = row * settings.tile_size
 					tile = (img, img_rect)
 					self.tiles.append(tile)
+				if (tile == 3):
+					blob = Enemy(col * settings.tile_size, row * settings.tile_size + 15, self.screen) # (x, y, screen)
+					enemies[0].add(blob)
+
 				col += 1
 			row += 1
 
@@ -238,9 +270,13 @@ class Game():
 
 	# start game
 	def start(self):
+		global enemies
+		enemy_blobs = pygame.sprite.Group()
+		enemies.append(enemy_blobs)
+
 		world = World(self.screen)
 		player = Player(100, settings.h - 130, self.screen, world)
-		
+
 		run = True 
 		while(run):
 			self.clock.tick(self.fps) 
@@ -249,6 +285,9 @@ class Game():
 			# world.draw_grid()
 			world.draw_tiles()
 			player.draw_player()
+			
+			enemies[0].update()
+			enemies[0].draw(self.screen) # draw the blob group
 
 			for event in pygame.event.get(): 
 				if event.type == pygame.QUIT:
