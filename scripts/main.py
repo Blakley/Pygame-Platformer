@@ -7,8 +7,9 @@ from pygame.locals import *
 
 
 class Player():
-	def __init__(self, x, y, screen):
+	def __init__(self, x, y, screen, world):
 		self.screen = screen
+		self.world = world
 
 		self.images_right = []
 		self.images_left = []
@@ -22,6 +23,8 @@ class Player():
 		self.rect = self.image.get_rect()
 		self.rect.x = x
 		self.rect.y = y
+		self.rect.w = self.image.get_width()
+		self.rect.h = self.image.get_height()
 		
 		self.vel_y = 0
 		self.jumped = False
@@ -82,8 +85,28 @@ class Player():
 		return value
 
 	# handle player collision
-	def collision(self):
-		print("")
+	def collision(self, dx, dy):
+		values = []
+
+		for tile in self.world.tiles:
+			# check for collision in x direction ...
+			if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.rect.w, self.rect.h):
+				dx = 0
+
+			# check collision in y direction of expected dy (change in y)
+			if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.rect.w, self.rect.h):
+				# check if jumping
+				if self.vel_y < 0:
+					dy = tile[1].bottom - self.rect.top # dist between top of player and bottom of block
+					self.vel_y = 0
+				# check if falling
+				elif self.vel_y >= 0:
+					dy = tile[1].top - self.rect.bottom
+
+		values.append(dx)
+		values.append(dy)
+		return values
+
 
 	# handle sprite animation
 	def animation(self, cool_down):
@@ -99,6 +122,10 @@ class Player():
 			
 			if self.direction == -1:
 				self.image = self.images_left[self.img_index]
+
+	# create a 2px rect outline around the player
+	def draw_outline(self):
+		pygame.draw.rect(self.screen, (179, 29, 18), self.rect, 2) 
 
 	# Update the player
 	def draw_player(self):
@@ -121,7 +148,9 @@ class Player():
 		dy += self.vel_y
 
 		# check for collision
-		# self.collision()
+		col = self.collision(dx, dy)
+		dx = col[0]
+		dy = col[1]
 
 		# update player coordinates
 		self.rect.x += dx
@@ -132,6 +161,8 @@ class Player():
 			dy = 0
 
 		self.screen.blit(self.image, self.rect)
+		self.draw_outline()
+
 
 class World():
 	def __init__(self, screen):
@@ -183,10 +214,16 @@ class World():
 		self.screen.blit(self.bg1, (0, 0))
 		self.screen.blit(self.sun, (50, 50))
 
+	# draw an outline around the tiles
+	def draw_outline(self, tile):
+		pygame.draw.rect(self.screen, (255, 255, 255), tile, 2) # draw an outline around the images
+
 	# draws the world data from the tiles we created
 	def draw_tiles(self):
 		for tile in self.tiles:
 			self.screen.blit(tile[0], tile[1]) # draw the (img, img_rect)
+			self.draw_outline(tile[1])
+
 
 class Game():
 	def __init__(self):
@@ -202,14 +239,14 @@ class Game():
 	# start game
 	def start(self):
 		world = World(self.screen)
-		player = Player(100, settings.h - 130, self.screen)
+		player = Player(100, settings.h - 130, self.screen, world)
 		
 		run = True 
 		while(run):
 			self.clock.tick(self.fps) 
 
 			world.draw_world()
-			world.draw_grid()
+			# world.draw_grid()
 			world.draw_tiles()
 			player.draw_player()
 
