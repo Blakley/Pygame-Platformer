@@ -5,63 +5,134 @@ import settings
 import pygame
 from pygame.locals import *
 
-#
+
 class Player():
 	def __init__(self, x, y, screen):
-		self.load_assets()
 		self.screen = screen
-		self.x = x
-		self.y = y
+
+		self.images_right = []
+		self.images_left = []
+		self.img_index = 0
+		self.counter = 0 # animation speed
+		self.direction = 0
+		
+		self.load_assets()
+		self.image = self.images_right[self.img_index] # first animation
+		
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+		
 		self.vel_y = 0
 		self.jumped = False
-
-	# load all player assets
+		self.crouch = False
+		
+	# Load all character images
 	def load_assets(self):
-		self.p1 = pygame.image.load(settings.imgP[0])
-		self.p1 = pygame.transform.scale(self.p1, (settings.tile_size + 25, settings.tile_size + 25))
-		self.rect = self.p1.get_rect()
+		for i in range(1, 5):
+			# load right player sprite images
+			imageR = pygame.image.load(f'../assets/Player/guy{i}.png')
+			imageR = pygame.transform.scale(imageR, (40, 80))
+			# make left player sprite images
+			imageL = pygame.transform.flip(imageR, True, False)
+			self.images_right.append(imageR)
+			self.images_left.append(imageL)		
 
-	def collision(self):
-		print("")
-
-	def draw_player(self):
-		dx = 0 # smooth movement
-		dy = 0
-
-		# controller handler
+	# handle key presses
+	def controller(self, dx, dy):
+		value = []
 		key = pygame.key.get_pressed()
-		if key[pygame.K_a]: # left
-			dx -= 5
-		if key[pygame.K_d]: # right
-			dx += 5
-		if key[pygame.K_w] and self.jumped == False: # jump
+		# w, a, s, d
+		if key[pygame.K_w] and self.jumped == False: # jumping
 			self.vel_y = -15
 			self.jumped = True
+		
 		if key[pygame.K_w] == False:
 			self.jumped = False
 
-		# gravity check
+		if key[pygame.K_s] and self.crouch == False: # crouching
+			self.crouch = True
+
+		if key[pygame.K_s] == False:
+			self.crouch = False
+		
+		if key[pygame.K_a]: # moving left
+			dx -= 5
+			self.counter += 1
+			self.direction = -1 
+		
+		if key[pygame.K_d]: # moving right
+			dx += 5
+			self.counter += 1
+			self.direction = 1 
+		
+		if key[pygame.K_a] == False and key[pygame.K_d] == False: # reset sprite animation
+			self.counter = 0
+			self.img_index = 0
+			
+			# determine the position of the player after they've stopped moving
+			if self.direction == 1:
+				self.image = self.images_right[self.img_index]
+
+			if self.direction == -1:
+				self.image = self.images_left[self.img_index]
+
+		value.append(dx)
+		value.append(dy)
+		return value
+
+	# handle player collision
+	def collision(self):
+		print("")
+
+	# handle sprite animation
+	def animation(self, cool_down):
+		if self.counter > cool_down:
+			self.counter = 0
+			self.img_index += 1 # change the animation
+			
+			if self.img_index >= len(self.images_right): # reset sprite img_index
+				self.img_index = 0
+			
+			if self.direction == 1:
+				self.image = self.images_right[self.img_index]
+			
+			if self.direction == -1:
+				self.image = self.images_left[self.img_index]
+
+	# Update the player
+	def draw_player(self):
+		dx = 0
+		dy = 0
+		walk_cool_down = 5
+
+		# input handler
+		key = self.controller(dx, dy) 
+		dx = key[0]
+		dy = key[1]
+		
+		# animation handler
+		self.animation(walk_cool_down)
+
+		# add gravity
 		self.vel_y += 1
 		if self.vel_y > 10:
 			self.vel_y = 10
 		dy += self.vel_y
 
-		# collision check
+		# check for collision
+		# self.collision()
 
-		# update coordinates
-		self.x += dx
-		self.y += dy
+		# update player coordinates
+		self.rect.x += dx
+		self.rect.y += dy
 
-		# stop player from falling from bottom of screen (temp)
 		if self.rect.bottom > settings.h:
 			self.rect.bottom = settings.h
 			dy = 0
 
-		self.screen.blit(self.p1, (self.x, self.y))
-		# self.screen.blit(self.p1, self.rect)
+		self.screen.blit(self.image, self.rect)
 
-
-#
 class World():
 	def __init__(self, screen):
 		self.tiles = []
@@ -117,34 +188,36 @@ class World():
 		for tile in self.tiles:
 			self.screen.blit(tile[0], tile[1]) # draw the (img, img_rect)
 
-#
 class Game():
 	def __init__(self):
 		pygame.init()
 		self.screen = pygame.display.set_mode((settings.w, settings.h))
 		pygame.display.set_caption('Mazer') # title
 		# icon = pygame.image.load('../assets/icon.png') # icon
-		# pygame.display.set_icon(icon)
+		# pygame.display.set_icon(icon)		
+		self.fps = 60
+		self.clock = pygame.time.Clock()
 		self.start()
 
+	# start game
 	def start(self):
 		world = World(self.screen)
-		player = Player(0, 680, self.screen)
+		player = Player(100, settings.h - 130, self.screen)
+		
 		run = True 
 		while(run):
-			# draw game content
+			self.clock.tick(self.fps) 
+
 			world.draw_world()
 			world.draw_grid()
 			world.draw_tiles()
 			player.draw_player()
-			
+
 			for event in pygame.event.get(): 
 				if event.type == pygame.QUIT:
 					run = False
 			pygame.display.update() 
 
-# 
+# begin
 game = Game()
 pygame.quit()
-
-

@@ -65,13 +65,3 @@ imgI = [
 	'../assets/.png',
 	'../assets/.png'
 ]
-
-
-# image player locations, test player
-imgP = [
-	'../assets/Player/guy1.png',
-	'../assets/Player/guy2.png',
-	'../assets/Player/guy3.png',
-	'../assets/Player/guy4.png'
-]
-
