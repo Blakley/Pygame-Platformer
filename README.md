@@ -2,4 +2,4 @@
 A Python 2D platformer
 
 ## DEMO
-![](https://gfycat.com/advancedthoseagouti)
+![](https://media.giphy.com/media/nuUvXhwfCckNqSqSuN/giphy.gif)
