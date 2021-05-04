@@ -22,7 +22,7 @@ pygame.display.set_caption('Mazer')
 in_menu = True
 game_finished = False
 game_over = 0 					# Game-Over flag
-current_level = 2				# level counter
+current_level = 0				# level counter
 max_levels = 3					# number of game levels (0 indexed)
 score_count = 0					# coin score count
 
