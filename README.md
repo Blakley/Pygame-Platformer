@@ -1,5 +1,4 @@
 # Mazer
 A Python 2D platformer
 
-## DEMO
-![GAME](https://i.giphy.com/media/nuUvXhwfCckNqSqSuN/giphy.webp)
+![GAME](https://media.giphy.com/media/MkJp69Sf93VOiXXmNV/giphy.gif)
